@@ -67,6 +67,8 @@ class FileDiff(object):
 		return False
 
 class Commit(object):
+	import json
+	aliases = json.load(open("aliases.json"))
 	def __init__(self, string):
 		self.filediffs = []
 		commit_line = string.split("|")
@@ -75,11 +77,19 @@ class Commit(object):
 			self.timestamp = commit_line[0]
 			self.date = commit_line[1]
 			self.sha = commit_line[2]
-			self.author = commit_line[3].strip()
+			self.author = Commit.replace_by_alias(commit_line[3].strip())
 			self.email = commit_line[4].strip()
 
 	def __lt__(self, other):
 		return self.timestamp.__lt__(other.timestamp) # only used for sorting; we just consider the timestamp.
+
+	@staticmethod
+	def replace_by_alias(author):
+		if author.isupper():
+			author = author.lower()
+		if author in Commit.aliases:
+			return Commit.aliases[author]
+		return author
 
 	def add_filediff(self, filediff):
 		self.filediffs.append(filediff)
@@ -92,7 +102,7 @@ class Commit(object):
 		commit_line = string.split("|")
 
 		if commit_line.__len__() == 5:
-			return (commit_line[3].strip(), commit_line[4].strip())
+			return (Commit.replace_by_alias(commit_line[3].strip()), commit_line[4].strip())
 
 	@staticmethod
 	def is_commit_line(string):
